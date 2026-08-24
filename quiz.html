@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Quiz MININT 2026 Multiplayer</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .question { margin-bottom: 15px; font-weight: bold; }
+    .options button { display: block; margin: 5px 0; }
+    #feedback { margin-top: 10px; font-style: italic; }
+    #result { margin-top: 20px; font-weight: bold; }
+    #ranking { margin-top: 30px; border-top: 1px solid #ccc; padding-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Quiz MININT 2026 Multiplayer</h1>
+  
+  <!-- Login -->
+  <div id="login">
+    <label>Digite seu nome: </label>
+    <input type="text" id="playerName">
+    <button onclick="startQuiz()">Iniciar Quiz</button>
+  </div>
+  
+  <!-- Quiz -->
+  <div id="quiz"></div>
+  <div id="feedback"></div>
+  <div id="result"></div>
+  <div id="ranking"></div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+
+  <script>
+    // 🔧 Configuração do Firebase (substitua pelos dados do seu projeto)
+    const firebaseConfig = {
+      apiKey: "SUA_API_KEY",
+      authDomain: "SEU_PROJETO.firebaseapp.com",
+      databaseURL: "https://SEU_PROJETO.firebaseio.com",
+      projectId: "SEU_PROJETO",
+      storageBucket: "SEU_PROJETO.appspot.com",
+      messagingSenderId: "ID",
+      appId: "APP_ID"
+    };
+
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Questões do quiz
+    const questions = [
+      {
+        q: "Em que ano ocorreu a independência de Angola?",
+        options: ["1961", "1975", "1980", "1992"],
+        answer: 1,
+        explanation: "A independência de Angola foi proclamada em 11 de novembro de 1975."
+      },
+      {
+        q: "Qual destes órgãos faz parte da estrutura do Ministério do Interior?",
+        options: ["Ministério da Educação", "Serviço de Investigação Criminal (SIC)", "Ministério da Saúde", "Ministério das Finanças"],
+        answer: 1,
+        explanation: "O SIC é um órgão integrante do MININT, responsável pela investigação criminal."
+      },
+      {
+        q: "Se todos os agentes são disciplinados e alguns disciplinados são promovidos, podemos afirmar que:",
+        options: ["Todos os agentes são promovidos", "Nenhum agente é promovido", "Alguns agentes podem ser promovidos", "Todos os disciplinados são agentes"],
+        answer: 2,
+        explanation: "A lógica mostra que apenas 'alguns disciplinados' são promovidos, logo alguns agentes podem ser promovidos."
+      }
+    ];
+
+    let current = 0;
+    let score = 0;
+    let player = "";
+
+    function startQuiz() {
+      player = document.getElementById("playerName").value;
+      if (player.trim() === "") {
+        alert("Digite seu nome para começar!");
+        return;
+      }
+      document.getElementById("login").style.display = "none";
+      loadQuestion();
+    }
+
+    function loadQuestion() {
+      if (current < questions.length) {
+        const q = questions[current];
+        document.getElementById("quiz").innerHTML = `
+          <div class="question">${q.q}</div>
+          <div class="options">
+            ${q.options.map((opt, i) => `<button onclick="checkAnswer(${i})">${opt}</button>`).join("")}
+          </div>
+        `;
+        document.getElementById("feedback").innerHTML = "";
+      } else {
+        document.getElementById("quiz").innerHTML = "";
+        document.getElementById("feedback").innerHTML = "";
+        document.getElementById("result").innerText = `Fim do quiz, ${player}! Sua pontuação: ${score}/${questions.length}`;
+        salvarPontuacao(player, score);
+      }
+    }
+
+    function checkAnswer(i) {
+      const q = questions[current];
+      if (i === q.answer) {
+        score++;
+        document.getElementById("feedback").innerHTML = `✅ Correto! ${q.explanation}`;
+      } else {
+        document.getElementById("feedback").innerHTML = `❌ Errado! ${q.explanation}`;
+      }
+      current++;
+      setTimeout(loadQuestion, 2000);
+    }
+
+    // 🔧 Salvar pontuação no Firebase
+    function salvarPontuacao(nome, pontos) {
+      db.ref("ranking").push({ jogador: nome, score: pontos });
+    }
+
+    // 🔧 Mostrar ranking em tempo real
+    db.ref("ranking").on("value", snapshot => {
+      const dados = snapshot.val();
+      let lista = "";
+      for (let id in dados) {
+        lista += `<li>${dados[id].jogador}: ${dados[id].score} pontos</li>`;
+      }
+      document.getElementById("ranking").innerHTML = `<h2>Ranking Online</h2><ol>${lista}</ol>`;
+    });
+  </script>
+</body>
+</html>
